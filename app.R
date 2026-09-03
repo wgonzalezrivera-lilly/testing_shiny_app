@@ -4,55 +4,97 @@ MAX_POSITION <- 51e6
 DEFAULT_POSITION_RANGE <- c(1, MAX_POSITION)
 
 ui <- fluidPage(
-	titlePanel("Chromosome 22 Fine-mapping Explorer"),
-	fluidRow(
-		column(
-			width = 3,
-			wellPanel(
-				fileInput(
-					"finemap_file",
-					"Upload fine-mapping results (CSV)",
-					accept = c(".csv", "text/csv")
+	tags$head(
+		tags$style(HTML("
+			.sidebar-toggle-btn { margin-right: 8px; text-decoration: none; }
+			#sidebar_wrapper > .row > div:first-child { transition: width 0.15s ease; }
+			#sidebar_wrapper.collapsed > .row > div:first-child { display: none; }
+			#sidebar_wrapper.collapsed > .row > div:nth-child(2) { width: 100%; flex: 0 0 100%; max-width: 100%; }
+		")),
+		tags$script(HTML("
+			$(document).on('click', '#toggle_sidebar', function(e) {
+				e.preventDefault();
+				$('#sidebar_wrapper').toggleClass('collapsed');
+			});
+		"))
+	),
+	titlePanel(
+		tagList(
+			actionLink("toggle_sidebar", label = icon("bars"), class = "sidebar-toggle-btn"),
+			"Chromosome 22 Fine-mapping Explorer"
+		)
+	),
+	div(
+		id = "sidebar_wrapper",
+		class = "collapsed",
+		navlistPanel(
+			id = "main_nav",
+		well = TRUE,
+		widths = c(2, 10),
+		tabPanel(
+			"Explorer",
+			fluidRow(
+				column(
+					width = 3,
+					wellPanel(
+						fileInput(
+							"finemap_file",
+							"Upload fine-mapping results (CSV)",
+							accept = c(".csv", "text/csv")
+						),
+						helpText("Required columns: CHR, POS, SNP, PIP."),
+						sliderInput(
+							"position_range",
+							"Position range (bp)",
+							min = DEFAULT_POSITION_RANGE[1],
+							max = DEFAULT_POSITION_RANGE[2],
+							value = DEFAULT_POSITION_RANGE,
+							step = 1e5,
+							sep = ""
+						),
+						sliderInput(
+							"pip_threshold",
+							"PIP highlight threshold",
+							min = 0,
+							max = 1,
+							value = 0.1,
+							step = 0.01
+						),
+						sliderInput(
+							"credible_set_threshold",
+							"Credible set coverage",
+							min = 0.5,
+							max = 0.99,
+							value = 0.95,
+							step = 0.01
+						),
+						numericInput("top_n", "Rows in variant table", value = 10, min = 1, max = 100, step = 1),
+						actionButton("reset_view", "Reset view", class = "btn-primary"),
+						downloadButton("download_variants", "Download visible variants")
+					)
 				),
-				helpText("Required columns: CHR, POS, SNP, PIP."),
-				sliderInput(
-					"position_range",
-					"Position range (bp)",
-					min = DEFAULT_POSITION_RANGE[1],
-					max = DEFAULT_POSITION_RANGE[2],
-					value = DEFAULT_POSITION_RANGE,
-					step = 1e5,
-					sep = ""
-				),
-				sliderInput(
-					"pip_threshold",
-					"PIP highlight threshold",
-					min = 0,
-					max = 1,
-					value = 0.1,
-					step = 0.01
-				),
-				sliderInput(
-					"credible_set_threshold",
-					"Credible set coverage",
-					min = 0.5,
-					max = 0.99,
-					value = 0.95,
-					step = 0.01
-				),
-				numericInput("top_n", "Rows in variant table", value = 10, min = 1, max = 100, step = 1),
-				actionButton("reset_view", "Reset view", class = "btn-primary"),
-				downloadButton("download_variants", "Download visible variants")
+				column(
+					width = 9,
+					plotOutput("pip_plot", height = "560px"),
+					tags$hr(),
+					h4("Highest-PIP variants"),
+					tableOutput("variant_table"),
+					verbatimTextOutput("data_status")
+				)
 			)
 		),
-		column(
-			width = 9,
-			plotOutput("pip_plot", height = "560px"),
-			tags$hr(),
-			h4("Highest-PIP variants"),
-			tableOutput("variant_table"),
-			verbatimTextOutput("data_status")
-		)
+		tabPanel(
+			"About",
+			h4("About this app"),
+			p("This app explores statistical fine-mapping results for chromosome 22, highlighting variants with high posterior inclusion probability (PIP) and their credible sets.")
+		),
+		tabPanel(
+			"Settings",
+			h4("Settings"),
+			p("App-wide settings will live here.")
+		),
+		"More to come \U0001F642"
+	)
 	)
 )
 
